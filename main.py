@@ -3,8 +3,8 @@ import dtale
 import warnings
 import numpy as np
 import pandas as pd 
-import seaborn as sns
-import matplotlib.pyplot as plt 
+
+from src.utils import Plotly_Plots
 
 # %% 1. Settings
 warnings.filterwarnings('ignore')
@@ -20,14 +20,21 @@ IN_PATH = 'data/in/'
 OUT_PATH = 'data/out/'
 
 # %% 2. Load data
+dtypes_dict = {
+    'store_id': 'str',
+    'buyer_id': 'str',
+    'sku': 'str',
+    'order_number': 'str',
+    'region_id': 'str'
+}
 filename = 'Estudio de caso - Base de ventas.xlsx'
-data = pd.read_excel(IN_PATH + filename, engine='openpyxl')
+data_ = pd.read_excel(IN_PATH + filename, engine='openpyxl', dtype=dtypes_dict)
 
 # %% 3. Exploratory data analysis
 d = dtale.show(data)
 dtale.instances()
 
-## Feature description
+## Features description
 # 1. store_id: Id from store
 # 2. store_first_day: First day of store
 # 3. leader_status: Is constant
@@ -55,18 +62,69 @@ dtale.instances()
 # 25. category: Category
 # 26. subcategory: Subcategory 
 
+# %% Barplot per region_id
+PP = Plotly_Plots(df=data, dim_col='region_id', dim_title='Region')
+PP.barplot_plotly()
+
 # %% 4. Processing
+data = data_.copy()
+
 cols_to_drop = {
-    'leader_status'
+    'leader_status',
+    'offer'
 }
 data.drop(columns=cols_to_drop, inplace=True)
 
-
-data['antiquity'] =
-
-## Descripción
-
-pd.pivot_table(
+data_orders = pd.pivot_table(
     data=data,
-    index='order_number'
+    index=['order_number', 'region_id', 'store_id', 'buyer_id', 'payment_type', 'purchase_completed'],
+    values=[
+        'full_price', 'discount', 'discounted_price', 'quantity', 'coupon_discount', 
+        'total_full_price', 'total_discounted_price'
+    ],
+    aggfunc={
+        #'full_price': np.mean, # Full price promedio por producto => Calcular como sum(total_full_price) / sum(quantity)
+        # 'discount_per_product': np.mean, # Descuento promedio por producto => Calcular como (sum(total_full_price) - sum(total_discounted_price)) / sum(quantity)
+        # 'discounted_price': np.mean, # Discounted price promedio por producto => Calcular como sum(total_discounted_price) / sum(quantity) 
+        'quantity': np.sum, # Total de unidades por pedido
+        'discount': np.sum, # sum(discount) == distinct(coupon_discount) 
+        'total_full_price': np.sum, # Venta full price de la orden
+        'total_discounted_price': np.sum # Venta discounted price de la orden
+    }
 )
+data_orders.reset_index(inplace=True)
+rename_cols = {
+    'order_number': 'order_id',
+    'discount': 'total_discount'
+}
+data_orders.rename(columns=rename_cols, inplace=True)
+data_orders['avg_full_price_per_product'] = data_orders['total_full_price'] / data_orders['quantity']
+data_orders['avg_disc_price_per_product'] = data_orders['total_discounted_price'] / data_orders['quantity']
+data_orders['avg_disc_per_product'] = data_orders['total_discount'] / data_orders['quantity']
+
+payment_type_2 = pd.pivot_table(
+    data=data_orders[data_orders['region_id'] == '2'],
+    index='payment_type',
+    values=['order_id', 'total_discounted_price'],
+    aggfunc={
+        'order_id': pd.Series.nunique,
+        'total_discounted_price': np.sum
+    }
+)
+payment_type_6 = pd.pivot_table(
+    data=data_orders[data_orders['region_id'] == '6'],
+    index='payment_type',
+    values=['order_id', 'total_discounted_price'],
+    aggfunc={
+        'order_id': pd.Series.nunique,
+        'total_discounted_price': np.sum
+    }
+)
+payment_type_2.sort_values(by='total_discounted_price', ascending=False, inplace=True)
+payment_type_6.sort_values(by='total_discounted_price', ascending=False, inplace=True)
+payment_type_2['orders_cum_prc'] = payment_type_2['order_id'].cumsum() / payment_type_2['order_id'].sum() 
+payment_type_6['orders_cum_prc'] = payment_type_6['order_id'].cumsum() / payment_type_6['order_id'].sum() 
+payment_type_2['revenue_cum_prc'] = payment_type_2['total_discounted_price'].cumsum() / payment_type_2['total_discounted_price'].sum() 
+payment_type_6['revenue_cum_prc'] = payment_type_6['total_discounted_price'].cumsum() / payment_type_6['total_discounted_price'].sum() 
+
+# %%
