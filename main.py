@@ -111,6 +111,8 @@ to_map = {
     'No': 0
 }
 data_orders['purchase_completed'] = data_orders['purchase_completed'].map(to_map)
+filename = 'data_orders.csv'
+data_orders.to_csv(OUT_PATH + filename, sep=',', index=False)
 
 # Granularidad nivel metodo de pago
 payment_type_2 = pd.pivot_table(
