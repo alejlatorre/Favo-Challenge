@@ -6,13 +6,15 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+from matplotlib.ticker import PercentFormatter
+
 from src.utils import Plotly_Plots
 
 # %% 1. Settings
 warnings.filterwarnings('ignore')
 
 option_settings = {
-    'display.max_rows': None,
+    'display.max_rows': False,
     'display.max_columns': None,
     'display.float_format': '{:,.4f}'.format
 }
@@ -68,10 +70,6 @@ dtale.instances()
 # 25. category: Category
 # 26. subcategory: Subcategory 
 
-# %% Barplot per region_id
-# PP = Plotly_Plots(df=data, dim_col='region_id', dim_title='Region')
-# PP.barplot_plotly()
-
 # %% 4. Processing
 data = data_.copy()
 
@@ -81,6 +79,7 @@ cols_to_drop = {
 }
 data.drop(columns=cols_to_drop, inplace=True)
 
+# Granularidad nivel ordenes
 data_orders = pd.pivot_table(
     data=data,
     index=['created_date', 'effective_date_time', 'order_number', 'region_id', 'store_id', 'buyer_id', 'payment_type', 'purchase_completed'],
@@ -113,6 +112,7 @@ to_map = {
 }
 data_orders['purchase_completed'] = data_orders['purchase_completed'].map(to_map)
 
+# Granularidad nivel metodo de pago
 payment_type_2 = pd.pivot_table(
     data=data_orders[data_orders['region_id'] == '2'],
     index='payment_type',
@@ -140,6 +140,7 @@ payment_type_6['revenue_cum_prc'] = payment_type_6['total_discounted_price'].cum
 payment_type_2.reset_index(inplace=True)
 payment_type_6.reset_index(inplace=True)
 
+# Series de tiempo nivel dia
 base_ts_2 = pd.pivot_table(
     data=data_orders[data_orders['region_id']=='2'],
     index='created_date',
@@ -189,6 +190,80 @@ base_ts_6.set_index('created_date', inplace=True)
 base_ts_6 = base_ts_6.resample('D').sum()
 base_ts_6.reset_index(inplace=True)
 base_ts_6['day_name'] = base_ts_6['created_date'].dt.day_name()
+
+# Ranking de categorias
+rnk_category_2 = pd.pivot_table(
+    data=data[data['region_id'] == '2'],
+    index='category',
+    values=['order_number', 'quantity', 'total_discounted_price'],
+    aggfunc={
+        'order_number': pd.Series.nunique,
+        'quantity': np.sum,
+        'total_discounted_price': np.sum
+    }
+).sort_values(by='quantity', ascending=False)
+rnk_category_6 = pd.pivot_table(
+    data=data[data['region_id'] == '6'],
+    index='category',
+    values=['order_number', 'quantity', 'total_discounted_price'],
+    aggfunc={
+        'order_number': pd.Series.nunique,
+        'quantity': np.sum,
+        'total_discounted_price': np.sum
+    }
+).sort_values(by='quantity', ascending=False)
+rnk_category_2['qty_cumperc'] = rnk_category_2['quantity'].cumsum() / rnk_category_2['quantity'].sum(axis=0) * 100
+rnk_category_6['qty_cumperc'] = rnk_category_6['quantity'].cumsum() / rnk_category_6['quantity'].sum(axis=0) * 100
+
+# Ranking de subcategorias
+rnk_subcategory_2 = pd.pivot_table(
+    data=data[data['region_id'] == '2'],
+    index='subcategory',
+    values=['order_number', 'quantity', 'total_discounted_price'],
+    aggfunc={
+        'order_number': pd.Series.nunique,
+        'quantity': np.sum,
+        'total_discounted_price': np.sum
+    }
+).sort_values(by='quantity', ascending=False)
+rnk_subcategory_6 = pd.pivot_table(
+    data=data[data['region_id'] == '6'],
+    index='subcategory',
+    values=['order_number', 'quantity', 'total_discounted_price'],
+    aggfunc={
+        'order_number': pd.Series.nunique,
+        'quantity': np.sum,
+        'total_discounted_price': np.sum
+    }
+).sort_values(by='quantity', ascending=False)
+rnk_subcategory_2['qty_cumperc'] = rnk_subcategory_2['quantity'].cumsum() / rnk_subcategory_2['quantity'].sum(axis=0) * 100
+rnk_subcategory_6['qty_cumperc'] = rnk_subcategory_6['quantity'].cumsum() / rnk_subcategory_6['quantity'].sum(axis=0) * 100
+
+# Ranking de marcas
+rnk_brand_2 = pd.pivot_table(
+    data=data[data['region_id'] == '2'],
+    index='brand',
+    values=['order_number', 'quantity', 'total_discounted_price'],
+    aggfunc={
+        'order_number': pd.Series.nunique,
+        'quantity': np.sum,
+        'total_discounted_price': np.sum
+    }
+).sort_values(by='quantity', ascending=False)
+rnk_brand_6 = pd.pivot_table(
+    data=data[data['region_id'] == '6'],
+    index='brand',
+    values=['order_number', 'quantity', 'total_discounted_price'],
+    aggfunc={
+        'order_number': pd.Series.nunique,
+        'quantity': np.sum,
+        'total_discounted_price': np.sum
+    }
+).sort_values(by='quantity', ascending=False)
+rnk_brand_2['qty_cumperc'] = rnk_brand_2['quantity'].cumsum() / rnk_brand_2['quantity'].sum(axis=0) * 100
+rnk_brand_6['qty_cumperc'] = rnk_brand_6['quantity'].cumsum() / rnk_brand_6['quantity'].sum(axis=0) * 100
+
+
 
 # %% 5. Plots
 mask_region_2 = data_orders['region_id'] == '2'
@@ -263,6 +338,54 @@ fig.suptitle('Revenue por tipo de pago y región', fontsize=20)
 axes[0].set(xlabel='Revenue', ylabel='Tipo de pago', title='Region 2')
 axes[1].set(xlabel='Revenue', ylabel='Tipo de pago', title='Region 6')
 plt.show()
+
+# Pareto plot - Categoria en Region 2
+fig, ax = plt.subplots(1, 1, figsize=(8, 4))
+ax.bar(
+    x=rnk_category_2.index, 
+    height=rnk_category_2['quantity'], 
+    color='darkcyan'
+)
+ax2 = ax.twinx()
+ax2.plot(
+    rnk_category_2.index, 
+    rnk_category_2['qty_cumperc'], 
+    color='chocolate', 
+    marker='D', 
+    ms=6
+)
+ax2.yaxis.set_major_formatter(PercentFormatter())
+ax2.axhline(y=60, xmin=0.05, xmax=0.95, linestyle='--', color='red')
+ax.tick_params(axis='x', rotation=70, labelsize=8)
+ax.set(xlabel='Categorias', ylabel='Unidades vendidas')
+ax2.set(xlabel='Categorias', ylabel='Unidades vendidas (%)')
+plt.title('Pareto de unidades vendidas por categoria en Región 2', fontsize=15)
+plt.show()
+
+# Pareto plot - Categoria en Region 6
+fig, ax = plt.subplots(1, 1, figsize=(8, 4))
+ax.bar(
+    x=rnk_category_6.index, 
+    height=rnk_category_6['quantity'], 
+    color='darkcyan'
+)
+ax2 = ax.twinx()
+ax2.plot(
+    rnk_category_6.index, 
+    rnk_category_6['qty_cumperc'], 
+    color='chocolate', 
+    marker='D', 
+    ms=6
+)
+ax2.yaxis.set_major_formatter(PercentFormatter())
+ax2.axhline(y=60, xmin=0.05, xmax=0.95, linestyle='--', color='red')
+ax.tick_params(axis='x', rotation=90, labelsize=8)
+ax.set(xlabel='Categorias', ylabel='Unidades vendidas')
+ax2.set(xlabel='Categorias', ylabel='Unidades vendidas (%)')
+plt.title('Pareto de unidades vendidas por categoria en Región 6', fontsize=15)
+plt.show()
+
+
 
 # Frecuencia
 data_orders.order_id.nunique() / data_orders.buyer_id.nunique()
