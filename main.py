@@ -12,7 +12,7 @@ from src.utils import Plotly_Plots
 warnings.filterwarnings('ignore')
 
 option_settings = {
-    'display.max_rows': False,
+    'display.max_rows': None,
     'display.max_columns': None,
     'display.float_format': '{:,.4f}'.format
 }
@@ -144,12 +144,13 @@ base_ts_2 = pd.pivot_table(
     data=data_orders[data_orders['region_id']=='2'],
     index='created_date',
     values=[
-        'order_id', 'purchase_completed', 'quantity', 
+        'order_id', 'buyer_id', 'purchase_completed', 'quantity', 
         'total_discounted_price', 'total_full_price', 'total_discount', 
         'avg_full_price_per_product', 'avg_disc_per_product'
     ],
     aggfunc={
         'order_id': pd.Series.nunique,
+        'buyer_id': pd.Series.nunique,
         'purchase_completed': np.sum,
         'quantity': np.mean,
         'total_full_price': np.sum,
@@ -159,18 +160,22 @@ base_ts_2 = pd.pivot_table(
         'avg_disc_per_product': np.mean
     }
 ).reset_index()
+base_ts_2.set_index('created_date', inplace=True)
+base_ts_2 = base_ts_2.resample('D').sum()
+base_ts_2.reset_index(inplace=True)
 base_ts_2['day_name'] = base_ts_2['created_date'].dt.day_name()
 
 base_ts_6 = pd.pivot_table(
     data=data_orders[data_orders['region_id']=='6'],
     index='created_date',
     values=[
-        'order_id', 'purchase_completed', 'quantity', 
+        'order_id', 'buyer_id', 'purchase_completed', 'quantity', 
         'total_discounted_price', 'total_full_price', 'total_discount', 
         'avg_full_price_per_product', 'avg_disc_per_product'
     ],
     aggfunc={
         'order_id': pd.Series.nunique,
+        'buyer_id': pd.Series.nunique,
         'purchase_completed': np.sum,
         'quantity': np.mean,
         'total_full_price': np.sum,
@@ -180,11 +185,46 @@ base_ts_6 = pd.pivot_table(
         'avg_disc_per_product': np.mean
     }
 ).reset_index()
+base_ts_6.set_index('created_date', inplace=True)
+base_ts_6 = base_ts_6.resample('D').sum()
+base_ts_6.reset_index(inplace=True)
 base_ts_6['day_name'] = base_ts_6['created_date'].dt.day_name()
 
 # %% 5. Plots
 mask_region_2 = data_orders['region_id'] == '2'
 mask_region_6 = data_orders['region_id'] == '6'
+
+# Lineplot: Trx evolution
+fig, ax1 = plt.subplots(1, 1, figsize=(10, 4))
+ax2 = ax1.twinx()
+ax1.plot(base_ts_2[['created_date', 'order_id']].set_index('created_date'), color='g')
+ax2.plot(base_ts_6[['created_date', 'order_id']].set_index('created_date'), color='b')
+ax1.set_xlabel('Día')
+ax1.set_ylabel('Ordenes (Region 2)')
+ax2.set_ylabel('Ordenes (Region 6)')
+fig.legend(['Region 2', 'Region 6'])
+fig.suptitle('Evolución de ordenes diarias por region')
+fig.autofmt_xdate(rotation=45)
+plt.show()
+
+# Barplot: Avg trx per day
+fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+sns.barplot(
+    x='day_name', 
+    y='order_id',
+    data=base_ts_2.groupby(['day_name'])['order_id'].mean().sort_values(ascending=False).reset_index(),
+    ax=axes[0]
+)
+sns.barplot(
+    x='day_name', 
+    y='order_id',
+    data=base_ts_6.groupby(['day_name'])['order_id'].mean().sort_values(ascending=False).reset_index(),
+    ax=axes[1]
+)
+axes[0].set(xlabel='Dia de la semana', ylabel='Ordenes promedio', title='Region 2')
+axes[1].set(xlabel='Dia de la semana', ylabel='Ordenes promedio', title='Region 6')
+fig.suptitle('Promedio de ordenes por dia de la semana', fontsize=15)
+plt.show()
 
 # Countplot: Qty of trx
 fig, axes = plt.subplots(2, 1, figsize=(10, 10))
@@ -224,46 +264,6 @@ axes[0].set(xlabel='Revenue', ylabel='Tipo de pago', title='Region 2')
 axes[1].set(xlabel='Revenue', ylabel='Tipo de pago', title='Region 6')
 plt.show()
 
-# Lineplot: Trx evolution
-fig, ax1 = plt.subplots(1, 1, figsize=(10, 4))
-ax2 = ax1.twinx()
-ax1.plot(base_ts_2[['created_date', 'order_id']].set_index('created_date'), color='g')
-ax2.plot(base_ts_6[['created_date', 'order_id']].set_index('created_date'), color='b')
-ax1.set_xlabel('Día')
-ax1.set_ylabel('Ordenes (Region 2)')
-ax2.set_ylabel('Ordenes (Region 6)')
-fig.legend(['Region 2', 'Region 6'])
-fig.suptitle('Evolución de ordenes diarias por region')
-fig.autofmt_xdate(rotation=45)
-plt.show()
-# fig = px.line(
-#     data_frame=base_ts, 
-#     x='created_date', 
-#     y='order_id',
-#     width=900,
-#     height=350,
-#     title='Evolución de ordenes diarias'
-# )
-# fig.update_layout(
-#     title='Evolución de ordenes diarias',
-#     xaxis_title='Días',
-#     yaxis_title='Número de ordenes',
-#     title_x=0.5
-# )
-# fig.show()
-
-# Barplot: Avg trx per day
-plt.figure(figsize=(6, 4))
-sns.barplot(
-    x='day_name', 
-    y='order_id',
-    data=base_ts.groupby(['day_name'])['order_id'].mean().sort_values(ascending=False).reset_index(),
-)
-plt.xlabel('Dia de la semana')
-plt.ylabel('Promedio de ordenes')
-plt.title('Promedio de ordenes por dia de la semana', fontsize=15)
-plt.show()
-
 # Frecuencia
 data_orders.order_id.nunique() / data_orders.buyer_id.nunique()
 
@@ -276,11 +276,20 @@ data_orders.total_discounted_price.sum() / data_orders.buyer_id.nunique()
 # Trx
 data_orders.order_id.nunique()
 
+# Ticket full price
+base_ts_2.iloc[:, 1:].sum()[7] / base_ts_2.iloc[:, 1:].sum()[2]
+base_ts_6.iloc[:, 1:].sum()[7] / base_ts_6.iloc[:, 1:].sum()[2]
+
+# Ticket discounted price
+base_ts_2.iloc[:, 1:].sum()[6] / base_ts_2.iloc[:, 1:].sum()[2]
+base_ts_6.iloc[:, 1:].sum()[6] / base_ts_6.iloc[:, 1:].sum()[2]
+
+# Efecto descuento
+base_ts_2.iloc[:, 1:].sum()[5] / base_ts_2.iloc[:, 1:].sum()[2]
+base_ts_6.iloc[:, 1:].sum()[5] / base_ts_6.iloc[:, 1:].sum()[2]
+
+# Promedio de unidades por orden
+base_ts_2.iloc[:, 1:].mean()[4]
+base_ts_6.iloc[:, 1:].mean()[4]
+
 # %%
-
-
-pd.pivot_table(
-    data=data_orders,
-    index='created_date',
-    values=['order_id']
-)
