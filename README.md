@@ -14,5 +14,4 @@ This repository contains my solution approach for sales business case proposed b
     $ git clone https://github.com/alejlatorre/Favo-Business-Case.git
     $ python -m venv venv_favo-business-case
     $ source venv_favo-business-case/bin/activate
-    $ cd Favo-Business-Case
     $ pip install -r requirements.txt
