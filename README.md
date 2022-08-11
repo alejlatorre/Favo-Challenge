@@ -9,7 +9,8 @@ This repository contains my solution approach for sales business case proposed b
 
 ## Instalation
 
-    $ mkdir Favo-Business-Case 
+    $ mkdir Favo-Business-Case
+    $ cd Favo-Business-Case
     $ git clone https://github.com/alejlatorre/Favo-Business-Case.git
     $ python -m venv venv_favo-business-case
     $ source venv_favo-business-case/bin/activate
