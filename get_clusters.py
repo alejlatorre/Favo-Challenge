@@ -1,4 +1,4 @@
-# %% Libraries
+# %% 0. Libraries
 import warnings
 import numpy as np
 import pandas as pd
@@ -14,7 +14,7 @@ from yellowbrick.cluster import silhouette_visualizer
 
 from src.models import RFM
 
-# %% Settings
+# %% 1. Settings
 warnings.filterwarnings('ignore')
 
 option_settings = {
@@ -27,12 +27,12 @@ option_settings = {
 IN_PATH = 'data/in/'
 OUT_PATH = 'data/out/'
 
-# %% Import data
+# %% 2. Import data
 filename = 'data_orders.csv'
 data_trx = pd.read_csv(OUT_PATH + filename)
 data_trx.head()
 
-# %% Split per region
+# %% 3. Model per region
 results = {}
 for region_id in data_trx['region_id'].unique():
     print(f'REGION {region_id}')

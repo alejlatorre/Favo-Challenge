@@ -79,7 +79,7 @@ cols_to_drop = {
 }
 data.drop(columns=cols_to_drop, inplace=True)
 
-# Granularidad nivel ordenes
+# Order level
 data_orders = pd.pivot_table(
     data=data,
     index=['created_date', 'effective_date_time', 'order_number', 'region_id', 'store_id', 'buyer_id', 'payment_type', 'purchase_completed'],
@@ -88,13 +88,13 @@ data_orders = pd.pivot_table(
         'total_full_price', 'total_discounted_price'
     ],
     aggfunc={
-        #'full_price': np.mean, # Full price promedio por producto => Calcular como sum(total_full_price) / sum(quantity)
-        # 'discount_per_product': np.mean, # Descuento promedio por producto => Calcular como (sum(total_full_price) - sum(total_discounted_price)) / sum(quantity)
-        # 'discounted_price': np.mean, # Discounted price promedio por producto => Calcular como sum(total_discounted_price) / sum(quantity) 
-        'quantity': np.sum, # Total de unidades por pedido
+        #'full_price': np.mean, # AVG full price per product => sum(total_full_price) / sum(quantity)
+        # 'discount_per_product': np.mean, # AVG discount per product => (sum(total_full_price) - sum(total_discounted_price)) / sum(quantity)
+        # 'discounted_price': np.mean, # AVG discounted price per product => sum(total_discounted_price) / sum(quantity) 
+        'quantity': np.sum, # Total qty per trx
         'discount': np.sum, # sum(discount) == distinct(coupon_discount) 
-        'total_full_price': np.sum, # Venta full price de la orden
-        'total_discounted_price': np.sum # Venta discounted price de la orden
+        'total_full_price': np.sum, # Total FP per trx 
+        'total_discounted_price': np.sum # Total revenue per trx
     }
 )
 data_orders.reset_index(inplace=True)
@@ -114,7 +114,7 @@ data_orders['purchase_completed'] = data_orders['purchase_completed'].map(to_map
 filename = 'data_orders.csv'
 data_orders.to_csv(OUT_PATH + filename, sep=',', index=False)
 
-# Granularidad nivel metodo de pago
+# Payment method level
 payment_type_2 = pd.pivot_table(
     data=data_orders[data_orders['region_id'] == '2'],
     index='payment_type',
@@ -142,7 +142,7 @@ payment_type_6['revenue_cum_prc'] = payment_type_6['total_discounted_price'].cum
 payment_type_2.reset_index(inplace=True)
 payment_type_6.reset_index(inplace=True)
 
-# Series de tiempo nivel dia
+# Daily time series
 base_ts_2 = pd.pivot_table(
     data=data_orders[data_orders['region_id']=='2'],
     index='created_date',
@@ -193,7 +193,7 @@ base_ts_6 = base_ts_6.resample('D').sum()
 base_ts_6.reset_index(inplace=True)
 base_ts_6['day_name'] = base_ts_6['created_date'].dt.day_name()
 
-# Ranking de categorias
+# Categories ranking
 rnk_category_2 = pd.pivot_table(
     data=data[data['region_id'] == '2'],
     index='category',
@@ -217,7 +217,7 @@ rnk_category_6 = pd.pivot_table(
 rnk_category_2['qty_cumperc'] = rnk_category_2['quantity'].cumsum() / rnk_category_2['quantity'].sum(axis=0) * 100
 rnk_category_6['qty_cumperc'] = rnk_category_6['quantity'].cumsum() / rnk_category_6['quantity'].sum(axis=0) * 100
 
-# Ranking de subcategorias
+# Subcategories ranking
 rnk_subcategory_2 = pd.pivot_table(
     data=data[data['region_id'] == '2'],
     index='subcategory',
@@ -241,7 +241,7 @@ rnk_subcategory_6 = pd.pivot_table(
 rnk_subcategory_2['qty_cumperc'] = rnk_subcategory_2['quantity'].cumsum() / rnk_subcategory_2['quantity'].sum(axis=0) * 100
 rnk_subcategory_6['qty_cumperc'] = rnk_subcategory_6['quantity'].cumsum() / rnk_subcategory_6['quantity'].sum(axis=0) * 100
 
-# Ranking de marcas
+# Brands ranking
 rnk_brand_2 = pd.pivot_table(
     data=data[data['region_id'] == '2'],
     index='brand',
@@ -339,7 +339,7 @@ axes[0].set(xlabel='Revenue', ylabel='Tipo de pago', title='Region 2')
 axes[1].set(xlabel='Revenue', ylabel='Tipo de pago', title='Region 6')
 plt.show()
 
-# Pareto plot - Categoria en Region 2
+# Pareto plot - Categories ranking in Region 2
 fig, ax = plt.subplots(1, 1, figsize=(8, 4))
 ax.bar(
     x=rnk_category_2.index, 
@@ -362,7 +362,7 @@ ax2.set(xlabel='Categorias', ylabel='Unidades vendidas (%)')
 plt.title('Pareto de unidades vendidas por categoria en Región 2', fontsize=15)
 plt.show()
 
-# Pareto plot - Categoria en Region 6
+# Pareto plot - Categories ranking in Region 6
 fig, ax = plt.subplots(1, 1, figsize=(8, 4))
 ax.bar(
     x=rnk_category_6.index, 
@@ -385,7 +385,7 @@ ax2.set(xlabel='Categorias', ylabel='Unidades vendidas (%)')
 plt.title('Pareto de unidades vendidas por categoria en Región 6', fontsize=15)
 plt.show()
 
-# Frecuencia
+# Frequency
 data_orders.order_id.nunique() / data_orders.buyer_id.nunique()
 
 # MAUs
@@ -405,11 +405,11 @@ base_ts_6.iloc[:, 1:].sum()[7] / base_ts_6.iloc[:, 1:].sum()[2]
 base_ts_2.iloc[:, 1:].sum()[6] / base_ts_2.iloc[:, 1:].sum()[2]
 base_ts_6.iloc[:, 1:].sum()[6] / base_ts_6.iloc[:, 1:].sum()[2]
 
-# Efecto descuento
+# Discount effect
 base_ts_2.iloc[:, 1:].sum()[5] / base_ts_2.iloc[:, 1:].sum()[2]
 base_ts_6.iloc[:, 1:].sum()[5] / base_ts_6.iloc[:, 1:].sum()[2]
 
-# Promedio de unidades por orden
+# Average units per order
 base_ts_2.iloc[:, 1:].mean()[4]
 base_ts_6.iloc[:, 1:].mean()[4]
 

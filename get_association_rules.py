@@ -1,4 +1,4 @@
-# %% Libraries
+# %% 0. Libraries
 import time
 import warnings
 import numpy as np
@@ -11,7 +11,7 @@ from mlxtend.frequent_patterns import (
     association_rules
 )
 
-# %% Settings
+# %% 1. Settings
 warnings.filterwarnings('ignore')
 
 option_settings = {
@@ -24,7 +24,7 @@ option_settings = {
 IN_PATH = 'data/in/'
 OUT_PATH = 'data/out/'
 
-# %% Import data
+# %% 2. Import data
 dtypes_dict = {
     'store_id': 'str',
     'buyer_id': 'str',
@@ -35,7 +35,7 @@ dtypes_dict = {
 filename = 'Estudio de caso - Base de ventas.xlsx'
 data_ = pd.read_excel(IN_PATH + filename, engine='openpyxl', dtype=dtypes_dict)
 
-# %% Processing
+# %% 3. Processing
 data = data_.copy()
 
 cols_to_drop = {
@@ -44,7 +44,7 @@ cols_to_drop = {
 }
 data.drop(columns=cols_to_drop, inplace=True)
 
-# %% Algorithm
+# %% 4. Algorithm
 basket_per_order_2 = data[data['region_id'] == '2'].groupby(['order_number', 'sku'])['order_number'].nunique().unstack().reset_index().fillna(0).set_index('order_number')
 frequent_itemsets_2 = apriori(basket_per_order_2, min_support=0.01, use_colnames=True)
 rules_2 = association_rules(frequent_itemsets_2, metric='lift', min_threshold=1)
@@ -61,7 +61,7 @@ rules_6['qty_antecedents'] = rules_6['antecedents'].apply(lambda x: len(x))
 rules_6['rn'] = rules_6.groupby(['antecedents'])['qty_antecedents'].rank(method='first')
 filt_rules_6 = rules_6.loc[rules['rn'] <= 3,:].copy()
 
-# %% Export
+# %% 5. Export
 filename = 'association_rules_R2.xlsx'
 filt_rules_2.to_excel(OUT_PATH + filename, index=False, engine='openpyxl')
 filename = 'association_rules_R6.xlsx'
