@@ -18,7 +18,7 @@ class RFM():
                 aggfunc={
                     date_col: pd.Series.max,
                     order_col: pd.Series.nunique,
-                    ticket_col: np.sum
+                    ticket_col: np.mean
                 }
             )
 

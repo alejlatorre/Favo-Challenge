@@ -265,8 +265,6 @@ rnk_brand_6 = pd.pivot_table(
 rnk_brand_2['qty_cumperc'] = rnk_brand_2['quantity'].cumsum() / rnk_brand_2['quantity'].sum(axis=0) * 100
 rnk_brand_6['qty_cumperc'] = rnk_brand_6['quantity'].cumsum() / rnk_brand_6['quantity'].sum(axis=0) * 100
 
-
-
 # %% 5. Plots
 mask_region_2 = data_orders['region_id'] == '2'
 mask_region_6 = data_orders['region_id'] == '6'
@@ -386,8 +384,6 @@ ax.set(xlabel='Categorias', ylabel='Unidades vendidas')
 ax2.set(xlabel='Categorias', ylabel='Unidades vendidas (%)')
 plt.title('Pareto de unidades vendidas por categoria en Región 6', fontsize=15)
 plt.show()
-
-
 
 # Frecuencia
 data_orders.order_id.nunique() / data_orders.buyer_id.nunique()
