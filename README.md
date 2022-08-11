@@ -1,6 +1,6 @@
-# Favo Business Case
+# Favo Challenge
 
-This repository contains my solution approach for sales business case proposed by Favo, an ecommerce that looks for increasing the average discounted ticket of the company.
+This repository contains my solution approach for sales challenge proposed by Favo, an ecommerce that looks for increasing the average discounted ticket of the company.
 
 ## Requirements
 
