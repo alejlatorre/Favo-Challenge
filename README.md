@@ -13,5 +13,6 @@ This repository contains my solution approach for sales challenge proposed by Fa
     $ cd Favo-Challenge
     $ git clone https://github.com/alejlatorre/Favo-Challenge.git
     $ python -m venv venv_favo-challenge
-    $ source venv_favo-challenge/bin/activate
+    $ source venv_favo-challenge/Scripts/activate
+    $ cd Favo-Challenge
     $ pip install -r requirements.txt
