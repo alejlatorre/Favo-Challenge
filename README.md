@@ -9,9 +9,9 @@ This repository contains my solution approach for sales challenge proposed by Fa
 
 ## Instalation
 
-    $ mkdir Favo-Business-Case
-    $ cd Favo-Business-Case
-    $ git clone https://github.com/alejlatorre/Favo-Business-Case.git
-    $ python -m venv venv_favo-business-case
-    $ source venv_favo-business-case/bin/activate
+    $ mkdir Favo-Challenge
+    $ cd Favo-Challenge
+    $ git clone https://github.com/alejlatorre/Favo-Challenge.git
+    $ python -m venv venv_favo-challenge
+    $ source venv_favo-challenge/bin/activate
     $ pip install -r requirements.txt
